@@ -1,0 +1,47 @@
+<?xml version= "1.0" encoding ="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="Widget.NumbPad.ActionBar.Solid" parent="@android:style/Widget.Holo.ActionBar.Solid">
+        <item name="android:background">#FFA500</item>
+    </style>
+
+    <style name="DialogWindowTitle.NumbPad" parent="@style/DialogWindowTitle_Holo">
+        <item name="android:textAppearance">@style/TextAppearance.NumbPad.DialogWindowTitle</item>
+    </style>
+
+    <style name="TextAppearance.NumbPad.DialogWindowTitle" parent="@android:style/TextAppearance.Holo.DialogWindowTitle">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.NumbPad.Medium" parent="@android:style/TextAppearance.Holo.Medium">
+        <item name="android:textStyle">italic</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Widget.NumbPad.Button.Borderless.Small" parent="@android:style/Widget.Holo.Button.Borderless.Small">
+        <item name="android:textColor">#fbfbff</item>
+        <item name="android:textAppearance">@style/TextAppearance.NumbPad.DialogButton</item>
+    </style>
+
+    <style name="TextAppearance.NumbPad.DialogButton" parent="@android:style/TextAppearance.Holo.Medium"></style>
+
+    <!--<style name="NumbPad.ButtonBar.AlertDialog" parent="@android:style/Holo.ButtonBar.AlertDialog">
+        <item name="android:background">#000000</item>
+    </style>-->
+
+    <style name="AlertDialog_NumbPad">
+        <item name="android:background">#000000</item>
+        <item name="android:fullDark">#f53321</item>
+        <item name="android:topDark">#000000</item>
+        <item name="android:centerDark">#000000</item>
+        <item name="android:bottomDark">#000000</item>
+        <item name="android:fullBright">#000000</item>
+        <item name="android:topBright">#000000</item>
+        <item name="android:centerBright">#000000</item>
+        <item name="android:bottomBright">#000000</item>
+        <item name="android:bottomMedium">#000000</item>
+        <item name="android:centerMedium">#000000</item>
+    </style>
+
+</resources>

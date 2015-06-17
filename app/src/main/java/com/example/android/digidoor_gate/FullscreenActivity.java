@@ -1,12 +1,12 @@
 package com.example.android.digidoor_gate;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import com.example.android.digidoor_gate.util.SystemUiHider;
 
@@ -27,7 +27,7 @@ public class FullscreenActivity extends Activity {
      * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
      * user interaction before hiding the system UI.
      */
-    private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
+    private static final int AUTO_HIDE_DELAY_MILLIS = 1500;
 
     /**
      * If set, will toggle the system UI visibility upon interaction. Otherwise,
@@ -51,14 +51,17 @@ public class FullscreenActivity extends Activity {
 
         setContentView(R.layout.activity_fullscreen2);
 
-        final View controlsView = findViewById(R.id.fullscreen_content_controls);
+        //final View controlsView = findViewById(R.id.fullscreen_content_controls);
         final View contentView = findViewById(R.id.fullscreen_content);
+
+        // Hides the Action Bar.
+        getActionBar().hide();
 
         // Set up an instance of SystemUiHider to control the system UI for
         // this activity.
         mSystemUiHider = SystemUiHider.getInstance(this, contentView, HIDER_FLAGS);
         mSystemUiHider.setup();
-        mSystemUiHider
+        /*mSystemUiHider
                 .setOnVisibilityChangeListener(new SystemUiHider.OnVisibilityChangeListener() {
                     // Cached values.
                     int mControlsHeight;
@@ -94,7 +97,7 @@ public class FullscreenActivity extends Activity {
                             delayedHide(AUTO_HIDE_DELAY_MILLIS);
                         }
                     }
-                });
+                });*/
 
         // Set up the user interaction to manually show or hide the system UI.
         contentView.setOnClickListener(new View.OnClickListener() {
@@ -111,7 +114,8 @@ public class FullscreenActivity extends Activity {
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
-        findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        //findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        setupNumbpad();
     }
 
     @Override
@@ -155,5 +159,47 @@ public class FullscreenActivity extends Activity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    private void setupNumbpad() {
+
+        // create an instance of NumbPad
+        NumbPad np = new NumbPad();
+        // optionally set additional title
+        np.setAdditionalText("Please Enter Pin:");
+        // show the NumbPad to capture input.
+        np.show(this, "SAMSUNG DIGIDOOR", NumbPad.HIDE_INPUT,
+                new NumbPad.numbPadInterface() {
+                    // This is called when the user click the 'Ok' button on the dialog
+                    // value is the captured input from the dialog.
+                    public String numPadInputValue(String value) {
+                        if (value.equals("1234")) {
+                            // do something here
+                            Toast.makeText(getApplicationContext(),
+                                    "Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(getApplicationContext(), UsbUnlock.class);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            // generate a toast message to inform the user that
+                            // the captured input is not valid
+                            Toast.makeText(getApplicationContext(),
+                                    "Pin is incorrect, please try again.", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(getApplicationContext(), FullscreenActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }
+                        return null;
+                    }
+
+                    // This is called when the user clicks the 'Cancel' button on the dialog
+                    public String numPadCanceled() {
+                        // generate a toast message to inform the user that the pin
+                        // capture was canceled
+                        Toast.makeText(getApplicationContext(),
+                                "Pin capture canceled!", Toast.LENGTH_SHORT).show();
+                        return null;
+                    }
+                });
     }
 }
