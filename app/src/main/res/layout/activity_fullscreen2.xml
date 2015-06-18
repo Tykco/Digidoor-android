@@ -6,12 +6,19 @@
     <!-- The primary full-screen view. This can be replaced with whatever view
          is needed to present your content, e.g. VideoView, SurfaceView,
          TextureView, etc. -->
+
+    <Button android:id="@+id/button_lock"
+        android:layout_width="125dp"
+        android:layout_height="71dp"
+        android:text="@string/button_text"
+        android:layout_gravity="center" />
     <TextView android:id="@+id/fullscreen_content" android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="139dp"
         android:keepScreenOn="true"
         android:textColor="#fbfbff"
-        android:textStyle="bold" android:textSize="50sp" android:gravity="center"
-        android:text="@string/dummy_content" />
+        android:textStyle="bold" android:textSize="36sp" android:gravity="center"
+        android:text="@string/gate_unlock"
+        android:layout_gravity="center_horizontal|top" />
 
 
 

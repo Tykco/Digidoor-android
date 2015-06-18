@@ -1,11 +1,17 @@
 package com.example.android.digidoor_gate;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.usb.UsbConstants;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbEndpoint;
+import android.hardware.usb.UsbInterface;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.android.digidoor_gate.util.SystemUiHider;
@@ -17,6 +23,16 @@ import com.example.android.digidoor_gate.util.SystemUiHider;
  * @see SystemUiHider
  */
 public class FullscreenActivity extends Activity {
+
+    public UsbManager usbManager;
+    public UsbDevice deviceFound;
+    public UsbDeviceConnection usbDeviceConnection;
+    public UsbInterface usbInterfaceFound = null;
+    public UsbEndpoint endpointOut = null;
+    public UsbEndpoint endpointIn = null;
+
+    private static final int LOCK = 2;
+    private static final int UNLOCK = 1;
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -56,48 +72,22 @@ public class FullscreenActivity extends Activity {
 
         // Hides the Action Bar.
         getActionBar().hide();
+        usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
 
-        // Set up an instance of SystemUiHider to control the system UI for
-        // this activity.
-        mSystemUiHider = SystemUiHider.getInstance(this, contentView, HIDER_FLAGS);
-        mSystemUiHider.setup();
-        /*mSystemUiHider
-                .setOnVisibilityChangeListener(new SystemUiHider.OnVisibilityChangeListener() {
-                    // Cached values.
-                    int mControlsHeight;
-                    int mShortAnimTime;
 
-                    @Override
-                    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-                    public void onVisibilityChange(boolean visible) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                            // If the ViewPropertyAnimator API is available
-                            // (Honeycomb MR2 and later), use it to animate the
-                            // in-layout UI controls at the bottom of the
-                            // screen.
-                            if (mControlsHeight == 0) {
-                                mControlsHeight = controlsView.getHeight();
-                            }
-                            if (mShortAnimTime == 0) {
-                                mShortAnimTime = getResources().getInteger(
-                                        android.R.integer.config_shortAnimTime);
-                            }
-                            controlsView.animate()
-                                    .translationY(visible ? 0 : mControlsHeight)
-                                    .setDuration(mShortAnimTime);
-                        } else {
-                            // If the ViewPropertyAnimator APIs aren't
-                            // available, simply show or hide the in-layout UI
-                            // controls.
-                            controlsView.setVisibility(visible ? View.VISIBLE : View.GONE);
-                        }
+        Button button = (Button) findViewById(R.id.button_lock);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                sendCommand(LOCK);
 
-                        if (visible && AUTO_HIDE) {
-                            // Schedule a hide().
-                            delayedHide(AUTO_HIDE_DELAY_MILLIS);
-                        }
-                    }
-                });*/
+                Toast.makeText(getApplicationContext(),
+                        "Gate is now locked.", Toast.LENGTH_SHORT).show();
+
+                //Re-invoke an instance of the NumbPad.
+                setupNumbpad();
+            }
+        });
+
 
         // Set up the user interaction to manually show or hide the system UI.
         contentView.setOnClickListener(new View.OnClickListener() {
@@ -118,6 +108,103 @@ public class FullscreenActivity extends Activity {
         setupNumbpad();
     }
 
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        Intent intent = getIntent();
+        String action = intent.getAction();
+
+        UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+        if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+            setDevice(device);
+        } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+            if (deviceFound != null && deviceFound.equals(device)) {
+                setDevice(null);
+            }
+        }
+    }
+
+    private void setDevice(UsbDevice device) {
+        usbInterfaceFound = null;
+        endpointOut = null;
+        endpointIn = null;
+
+        for (int i = 0; i < (device.getInterfaceCount()-2); i++) {
+            UsbInterface usbInterface = device.getInterface(i);
+            //TextInfo.append(usbInterface.toString() + "\n");
+            //TextInfo.append("\n");
+            UsbEndpoint tOut = null;
+            UsbEndpoint tIn = null;
+
+            int tEndpointCnt = usbInterface.getEndpointCount();
+            if (tEndpointCnt >= 2) {
+                for (int j = 0; j < tEndpointCnt; j++) {
+                    if (usbInterface.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
+                        if (usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_OUT) {
+                            tOut = usbInterface.getEndpoint(j);
+                        } else if (usbInterface.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_IN) {
+                            tIn = usbInterface.getEndpoint(j);
+                        }
+                    }
+                }
+
+                if (tOut != null && tIn != null) {
+                    // This interface have both USB_DIR_OUT
+                    // and USB_DIR_IN of USB_ENDPOINT_XFER_BULK
+                    usbInterfaceFound = usbInterface;
+                    endpointOut = tOut;
+                    endpointIn = tIn;
+                }
+            }
+
+        }
+
+        if (usbInterfaceFound == null) {
+            return;
+        }
+
+        deviceFound = device;
+
+        if (device != null) {
+            UsbDeviceConnection connection =
+                    usbManager.openDevice(device);
+            if (connection != null &&
+                    connection.claimInterface(usbInterfaceFound, true)) {
+                usbDeviceConnection = connection;
+                Thread thread = new Thread();
+                thread.start();
+
+            } else {
+                usbDeviceConnection = null;
+            }
+        }
+    }
+
+    private void sendCommand(int control) {
+        synchronized (this) {
+
+            if (usbDeviceConnection != null) {
+                byte[] message = new byte[1];
+                message[0] = (byte)control;
+				/*ByteBuffer messagebuf = ByteBuffer.wrap(message);
+				UsbRequest requestRec = new UsbRequest();
+				requestRec.initialize(usbDeviceConnection, endpointOut);
+				requestRec.queue(messagebuf, 1);
+				while (true) {
+
+					if (usbDeviceConnection.requestWait() == requestRec) {
+						break;
+					}
+				}*/
+
+
+                usbDeviceConnection.bulkTransfer(endpointOut,message, message.length, 500);
+            }
+        }
+    }
+
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
@@ -125,7 +212,7 @@ public class FullscreenActivity extends Activity {
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
         // are available.
-        delayedHide(100);
+        //delayedHide(100);
     }
 
 
@@ -133,7 +220,6 @@ public class FullscreenActivity extends Activity {
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
      * while interacting with activity UI.
-     */
     View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -150,16 +236,16 @@ public class FullscreenActivity extends Activity {
         public void run() {
             mSystemUiHider.hide();
         }
-    };
+    };*/
 
-    /**
+   /* *//**
      * Schedules a call to hide() in [delay] milliseconds, canceling any
      * previously scheduled calls.
-     */
+     *//*
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
-    }
+    }*/
 
     private void setupNumbpad() {
 
@@ -177,9 +263,10 @@ public class FullscreenActivity extends Activity {
                             // do something here
                             Toast.makeText(getApplicationContext(),
                                     "Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(getApplicationContext(), UsbUnlock.class);
+                            sendCommand(UNLOCK);
+                            /*Intent intent = new Intent(getApplicationContext(), UsbUnlock.class);
                             startActivity(intent);
-                            finish();
+                            finish();*/
                         } else {
                             // generate a toast message to inform the user that
                             // the captured input is not valid
