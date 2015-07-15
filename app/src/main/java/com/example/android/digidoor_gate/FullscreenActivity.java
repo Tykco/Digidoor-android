@@ -17,12 +17,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.digidoor_gate.util.SystemUiHider;
-
-import java.util.ArrayList;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -39,8 +36,6 @@ public class FullscreenActivity extends Activity {
     public UsbEndpoint endpointOut = null;
     public UsbEndpoint endpointIn = null;
 
-    private ArrayList<BluetoothDevice> mLeDevices;
-    private LeDeviceListAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
@@ -51,33 +46,6 @@ public class FullscreenActivity extends Activity {
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 1000;
 
-    /**
-     * Whether or not the system UI should be auto-hidden after
-     * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
-     */
-    private static final boolean AUTO_HIDE = true;
-
-    /**
-     * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
-     * user interaction before hiding the system UI.
-     */
-    private static final int AUTO_HIDE_DELAY_MILLIS = 1500;
-
-    /**
-     * If set, will toggle the system UI visibility upon interaction. Otherwise,
-     * will show the system UI visibility upon interaction.
-     */
-    private static final boolean TOGGLE_ON_CLICK = true;
-
-    /**
-     * The flags to pass to {@link SystemUiHider#getInstance}.
-     */
-    private static final int HIDER_FLAGS = SystemUiHider.FLAG_HIDE_NAVIGATION;
-
-    /**
-     * The instance of the {@link SystemUiHider} for this activity.
-     */
-    private SystemUiHider mSystemUiHider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,18 +76,6 @@ public class FullscreenActivity extends Activity {
             }
         });
 
-
-        // Set up the user interaction to manually show or hide the system UI.
-        contentView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (TOGGLE_ON_CLICK) {
-                    mSystemUiHider.toggle();
-                } else {
-                    mSystemUiHider.show();
-                }
-            }
-        });
 
 
         mHandler = new Handler();
@@ -194,19 +150,6 @@ public class FullscreenActivity extends Activity {
         //mLeDeviceListAdapter.clear();
     }
 
-    /*@Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-        final BluetoothDevice device = mLeDeviceListAdapter.getDevice(position);
-        if (device == null) return;
-        final Intent intent = new Intent(this, DeviceControlActivity.class);
-        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
-        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
-        if (mScanning) {
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);
-            mScanning = false;
-        }
-        startActivity(intent);
-    }*/
 
     Runnable runnableStop = new Runnable() {
         @Override
@@ -242,84 +185,6 @@ public class FullscreenActivity extends Activity {
         invalidateOptionsMenu();
     }
 
-    // Adapter for holding devices found through scanning.
-    private class LeDeviceListAdapter {
-        private ArrayList<BluetoothDevice> mLeDevices;
-        private ArrayList<String> mLeDevicesData;
-        private ArrayList<Integer> mLeDevicesRSSI;
-        public LeDeviceListAdapter() {
-            mLeDevices = new ArrayList<BluetoothDevice>();
-            mLeDevicesData = new ArrayList<String>();
-            mLeDevicesRSSI = new ArrayList<Integer>();
-        }
-
-        public void addDevice(BluetoothDevice device,int rssi, byte[] scanRecord) {
-            if(!mLeDevices.contains(device)) {
-                String s = Integer.toHexString(scanRecord[28]);
-                mLeDevices.add(device);
-                mLeDevicesData.add(s);
-                mLeDevicesRSSI.add(rssi);
-            }
-        }
-
-        public BluetoothDevice getDevice(int position) {
-            return mLeDevices.get(position);
-        }
-
-        public void clear() {
-            mLeDevices.clear();
-            mLeDevicesData.clear();
-            mLeDevicesRSSI.clear();
-        }
-
-
-        public int getCount() {
-            return mLeDevices.size();
-        }
-
-
-        public Object getItem(int i) {
-            return mLeDevices.get(i);
-        }
-
-
-        public long getItemId(int i) {
-            return i;
-        }
-
-        /*@Override
-        public View getView(final int i, View view, ViewGroup viewGroup) {
-            ViewHolder viewHolder;
-            // General ListView optimization code.
-            *//*if (view == null) {
-                view = mInflator.inflate(R.layout.listitem_device, null);
-                viewHolder = new ViewHolder();
-                viewHolder.deviceAddress = (TextView) view.findViewById(R.id.device_address);
-                viewHolder.deviceName = (TextView) view.findViewById(R.id.device_name);
-                viewHolder.deviceRSSI = (TextView) view.findViewById(R.id.device_rssi);
-                view.setTag(viewHolder);
-            } else {
-                viewHolder = (ViewHolder) view.getTag();
-            }*//*
-
-            BluetoothDevice device = mLeDevices.get(i);
-            final String deviceName = device.getName();
-            *//*if (deviceName != null && deviceName.length() > 0)
-                viewHolder.deviceName.setText(deviceName);
-
-            else
-                viewHolder.deviceName.setText(R.string.unknown_device);*//*
-
-
-            //viewHolder.deviceAddress.setText(mLeDevicesData.get(i));
-            //viewHolder.deviceRSSI.setText(mLeDevicesRSSI.get(i).toString());
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);
-            if ( mLeDevicesRSSI.get(i) < -65) {
-                sendCommand(LOCK);
-            } else sendCommand(UNLOCK);
-            return view;
-        }*/
-    }
 
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
@@ -343,11 +208,6 @@ public class FullscreenActivity extends Activity {
                 }
             };
 
-    static class ViewHolder {
-        TextView deviceName;
-        TextView deviceAddress;
-        TextView deviceRSSI;
-    }
 
     private void setDevice(UsbDevice device) {
         usbInterfaceFound = null;
@@ -411,17 +271,6 @@ public class FullscreenActivity extends Activity {
             if (usbDeviceConnection != null) {
                 byte[] message = new byte[1];
                 message[0] = (byte)control;
-				/*ByteBuffer messagebuf = ByteBuffer.wrap(message);
-				UsbRequest requestRec = new UsbRequest();
-				requestRec.initialize(usbDeviceConnection, endpointOut);
-				requestRec.queue(messagebuf, 1);
-				while (true) {
-
-					if (usbDeviceConnection.requestWait() == requestRec) {
-						break;
-					}
-				}*/
-
 
                 usbDeviceConnection.bulkTransfer(endpointOut,message, message.length, 500);
             }
@@ -439,37 +288,6 @@ public class FullscreenActivity extends Activity {
     }
 
 
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-    if (AUTO_HIDE) {
-    delayedHide(AUTO_HIDE_DELAY_MILLIS);
-    }
-    return false;
-    }
-    };
-
-     Handler mHideHandler = new Handler();
-     Runnable mHideRunnable = new Runnable() {
-    @Override
-    public void run() {
-    mSystemUiHider.hide();
-    }
-    };*/
-
-    /**
-     * Schedules a call to hide() in [delay] milliseconds, canceling any
-     * previously scheduled calls.
-     *//*
-    private void delayedHide(int delayMillis) {
-        mHideHandler.removeCallbacks(mHideRunnable);
-        mHideHandler.postDelayed(mHideRunnable, delayMillis);
-    }*/
-
     private void setupNumbpad() {
 
         // create an instance of NumbPad
@@ -486,10 +304,8 @@ public class FullscreenActivity extends Activity {
                             // do something here
                             Toast.makeText(getApplicationContext(),
                                     "Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
+                            //Sends signal through USB to Arduino to unlock gate
                             sendCommand(UNLOCK);
-                            /*Intent intent = new Intent(getApplicationContext(), UsbUnlock.class);
-                            startActivity(intent);
-                            finish();*/
                         } else {
                             // generate a toast message to inform the user that
                             // the captured input is not valid
