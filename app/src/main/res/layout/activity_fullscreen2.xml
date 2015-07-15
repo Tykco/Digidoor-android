@@ -1,0 +1,43 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:background="#000000"
+    tools:context="com.example.android.digidoor_gate.FullscreenActivity">
+
+    <!-- The primary full-screen view. This can be replaced with whatever view
+         is needed to present your content, e.g. VideoView, SurfaceView,
+         TextureView, etc. -->
+
+    <Button android:id="@+id/button_lock"
+        android:layout_width="125dp"
+        android:layout_height="71dp"
+        android:text="@string/button_text"
+        android:layout_gravity="center" />
+    <TextView android:id="@+id/fullscreen_content" android:layout_width="match_parent"
+        android:layout_height="139dp"
+        android:keepScreenOn="true"
+        android:textColor="#fbfbff"
+        android:textStyle="bold" android:textSize="36sp" android:gravity="center"
+        android:text="@string/gate_unlock"
+        android:layout_gravity="center_horizontal|top" />
+
+
+
+    <!-- This FrameLayout insets its children based on system windows using
+         android:fitsSystemWindows. -->
+    <!--<FrameLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:fitsSystemWindows="true">
+
+        <LinearLayout android:id="@+id/fullscreen_content_controls" style="?metaButtonBarStyle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@color/black_overlay" android:orientation="horizontal"
+            tools:ignore="UselessParent">
+
+            &lt;!&ndash;<Button android:id="@+id/dummy_button" style="?metaButtonBarButtonStyle"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="@string/dummy_button" />&ndash;&gt;
+
+        </LinearLayout>
+    </FrameLayout>-->
+
+</FrameLayout>
