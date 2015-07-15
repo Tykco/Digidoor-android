@@ -15,7 +15,6 @@ import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -40,6 +39,7 @@ public class FullscreenActivity extends Activity {
     public UsbEndpoint endpointOut = null;
     public UsbEndpoint endpointIn = null;
 
+    private ArrayList<BluetoothDevice> mLeDevices;
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
@@ -214,7 +214,6 @@ public class FullscreenActivity extends Activity {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             invalidateOptionsMenu();
-            //mLeDeviceListAdapter.clear();
             mHandler.postDelayed(runnableStart, 500);
         }
     };
@@ -246,15 +245,12 @@ public class FullscreenActivity extends Activity {
     // Adapter for holding devices found through scanning.
     private class LeDeviceListAdapter {
         private ArrayList<BluetoothDevice> mLeDevices;
-        private LayoutInflater mInflator;
         private ArrayList<String> mLeDevicesData;
         private ArrayList<Integer> mLeDevicesRSSI;
         public LeDeviceListAdapter() {
-            super();
             mLeDevices = new ArrayList<BluetoothDevice>();
             mLeDevicesData = new ArrayList<String>();
             mLeDevicesRSSI = new ArrayList<Integer>();
-            mInflator = FullscreenActivity.this.getLayoutInflater();
         }
 
         public void addDevice(BluetoothDevice device,int rssi, byte[] scanRecord) {
@@ -334,14 +330,13 @@ public class FullscreenActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                            if (scanRecord[28] == (byte) 0xAF) {
-                                if ( rssi < -65) {
-                                    sendCommand(LOCK);
-                                } else sendCommand(UNLOCK);
 
-                                mLeDeviceListAdapter.addDevice(device, rssi, scanRecord);
-                                //mLeDeviceListAdapter.notifyDataSetChanged();
+                            if (scanRecord[28] == (byte) 0xAF) {
+                                mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                                if (rssi > -65&&rssi != 0) {
+                                    sendCommand(UNLOCK);
+                                } else sendCommand(LOCK);
+
                             }
                         }
                     });
@@ -448,25 +443,25 @@ public class FullscreenActivity extends Activity {
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
      * while interacting with activity UI.
-    View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (AUTO_HIDE) {
-                delayedHide(AUTO_HIDE_DELAY_MILLIS);
-            }
-            return false;
-        }
+     View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+    if (AUTO_HIDE) {
+    delayedHide(AUTO_HIDE_DELAY_MILLIS);
+    }
+    return false;
+    }
     };
 
-    Handler mHideHandler = new Handler();
-    Runnable mHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            mSystemUiHider.hide();
-        }
+     Handler mHideHandler = new Handler();
+     Runnable mHideRunnable = new Runnable() {
+    @Override
+    public void run() {
+    mSystemUiHider.hide();
+    }
     };*/
 
-   /* *//**
+    /**
      * Schedules a call to hide() in [delay] milliseconds, canceling any
      * previously scheduled calls.
      *//*
