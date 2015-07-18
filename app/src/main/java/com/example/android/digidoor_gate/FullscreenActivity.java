@@ -19,7 +19,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.android.digidoor_gate.util.SystemUiHider;
+
+import org.json.*;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -45,6 +52,7 @@ public class FullscreenActivity extends Activity {
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 1000;
+    public static String pinStr = "";
 
 
     @Override
@@ -59,6 +67,10 @@ public class FullscreenActivity extends Activity {
         // Hides the Action Bar.
         getActionBar().hide();
         usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
+
+        String url ="http://digidoor.herokuapp.com/api/v1/owners.json";
+        requestData(url);
+
         //Invoke NumbPad.
         setupNumbpad();
 
@@ -287,8 +299,14 @@ public class FullscreenActivity extends Activity {
         //delayedHide(100);
     }
 
-
+    //public String pin = "";
     private void setupNumbpad() {
+
+        //new HttpGet().execute("http://digidoor.herokuapp.com/api/v1/owners");
+
+        //final String pinStr = getPin();
+        Toast.makeText(getApplicationContext(),
+                "Print final pinStr: " + pinStr, Toast.LENGTH_SHORT).show();
 
         // create an instance of NumbPad
         NumbPad np = new NumbPad();
@@ -300,10 +318,10 @@ public class FullscreenActivity extends Activity {
                     // This is called when the user click the 'Ok' button on the dialog
                     // value is the captured input from the dialog.
                     public String numPadInputValue(String value) {
-                        if (value.equals("1234")) {
+                        if (value.equals(pinStr)) {
                             // do something here
                             Toast.makeText(getApplicationContext(),
-                                    "Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
+                                    "Pin: " + pinStr + ". Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
                             //Sends signal through USB to Arduino to unlock gate
                             sendCommand(UNLOCK);
                         } else {
@@ -315,6 +333,8 @@ public class FullscreenActivity extends Activity {
                             startActivity(intent);
                             finish();
                         }
+
+
                         return null;
                     }
 
@@ -328,4 +348,97 @@ public class FullscreenActivity extends Activity {
                     }
                 });
     }
+
+    /*public String getPin() {
+        String pinStr = "";
+        String str = callURL("http://digidoor.herokuapp.com/api/v1/owners");
+        JSONArray aryJSONStrings;
+        try {
+            aryJSONStrings = new JSONArray(str);
+            for (int i = 0; i < aryJSONStrings.length(); i++) {
+                int pin = aryJSONStrings.getJSONObject(i).getInt("pin");
+                pinStr = Integer.toString(pin);
+                Toast.makeText(getApplicationContext(),
+                        "getPin: " + pinStr, Toast.LENGTH_SHORT).show();
+            }
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return pinStr;
+    }
+
+    public static String callURL(String myURL) {
+        //System.out.println("Requested URL:" + myURL);
+        StringBuilder sb = new StringBuilder();
+        URLConnection urlConn = null;
+        InputStreamReader in = null;
+        try {
+            URL url = new URL(myURL);
+            urlConn = url.openConnection();
+            if (urlConn != null)
+                urlConn.setReadTimeout(60 * 1000);
+            if (urlConn != null && urlConn.getInputStream() != null) {
+                in = new InputStreamReader(urlConn.getInputStream(),
+                        Charset.defaultCharset());
+                BufferedReader bufferedReader = new BufferedReader(in);
+                if (bufferedReader != null) {
+                    int cp;
+                    while ((cp = bufferedReader.read()) != -1) {
+                        sb.append((char) cp);
+                    }
+                    bufferedReader.close();
+                }
+            }
+            in.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Exception while calling URL:"+ myURL, e);
+        }
+        return sb.toString();
+    }*/
+
+    /***
+     * This method takes in the HTTP address and performs a GET request
+     * to retrieve the pin from the server database.
+     * @param uri
+     */
+    private void requestData(String uri){
+
+        StringRequest request = new StringRequest(uri,
+
+                new Response.Listener<String>() {
+
+                    @Override
+                    public void onResponse(String response) {
+                        /*Toast.makeText(getApplicationContext(),
+                                "Response is: "+ response, Toast.LENGTH_LONG).show();*/
+
+                        try {
+                            JSONArray array = new JSONArray(response);
+                            for (int i = 0; i < array.length(); i++) {
+                                int pinNumber = array.getJSONObject(i).getInt("pin");
+                                pinStr = Integer.toString(pinNumber);
+                            }
+                            /*Toast.makeText(getApplicationContext(),
+                                    "pinStr is: "+ pinStr, Toast.LENGTH_LONG).show();*/
+                        } catch (JSONException e) {
+                            Toast.makeText(getApplicationContext(),
+                                    "JSONException", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                },
+
+                new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError ex) {
+                        Toast.makeText(getApplicationContext(),
+                                "Volley Error!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(request);
+;    }
+
 }
