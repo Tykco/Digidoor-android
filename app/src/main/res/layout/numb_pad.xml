@@ -2,7 +2,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:paddingTop="0dp"
+    android:background="@android:color/black">
+
+    <!--<LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAMSUNG DIGIDOOR"
+            android:id="@+id/textSamsung"
+            android:textSize="35dp" />
+    </LinearLayout>-->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,7 +29,9 @@
             android:layout_height="40dp"
             android:gravity="center"
             android:text="@string/some_message"
-            android:textSize="30sp" />
+            android:textSize="30sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="10dp" />
 
     </LinearLayout>
 
@@ -26,10 +43,11 @@
             android:id="@+id/promptValue"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:gravity="center"
             android:text="@string/pin_code_hidden_view"
             android:textColor="#FFFF0000"
-            android:textSize="50sp" />
+            android:textSize="40sp"
+            android:layout_marginBottom="0dp"
+            android:gravity="center" />
 
     </LinearLayout>
 
@@ -39,11 +57,11 @@
         android:layout_gravity="center_horizontal" >-->
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:orientation="vertical"
-            android:layout_marginTop="20dp">
+            android:gravity="center">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -52,21 +70,33 @@
 
                 <Button
                     android:id="@+id/button1"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/one" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/one"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button2"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/two" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/two"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button3"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/three" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/three"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -75,21 +105,33 @@
 
                 <Button
                     android:id="@+id/button4"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/four" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/four"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button5"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/five" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/five"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button6"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/six" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/six"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -98,47 +140,106 @@
 
                 <Button
                     android:id="@+id/button7"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/seven" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/seven"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button8"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/eight" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/eight"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button9"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/nine" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/nine"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp" >
+                android:layout_height="wrap_content">
 
                 <Button
                     android:id="@+id/buttonC"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/Clear" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/Clear"
+                    android:textSize="30sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
                 <Button
                     android:id="@+id/button0"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/zero" />
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/zero"
+                    android:textSize="25sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
 
-                <!--<Button
-                    android:id="@+id/buttonDot"
-                    android:layout_width="100dp"
-                    android:layout_height="75dp"
-                    android:text="@string/dot" />-->
+                <Button
+                    android:id="@+id/buttonUnlock"
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:text="@string/Unlock"
+                    android:textSize="20sp"
+                    android:background="@drawable/button_black_white"
+                    android:textColor="@android:color/white"
+                    android:layout_margin="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="15dp">
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="@string/Call_owners"
+                    android:id="@+id/buttonCall"
+                    android:textSize="20sp"
+                    android:layout_marginTop="5dp"
+                    android:background="@drawable/button_black_white_rect"
+                    android:textColor="@android:color/white"
+                    android:layout_weight="0.5"
+                    android:layout_marginLeft="3dp"
+                    android:layout_gravity="left" />
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="@string/Scheduled_users"
+                    android:id="@+id/buttonScheduled"
+                    android:textSize="20sp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginLeft="150dp"
+                    android:layout_marginRight="0dp"
+                    android:layout_gravity="right"
+                    android:textColor="@android:color/white"
+                    android:layout_weight="0.5"
+                    android:background="@drawable/button_black_white_rect" />
+
             </LinearLayout>
         </LinearLayout>
+
     <!--</FrameLayout>-->
 
 </LinearLayout>

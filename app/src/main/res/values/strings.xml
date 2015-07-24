@@ -8,7 +8,7 @@
     <string name="title_activity_fullscreen">FullscreenActivity</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content"></string>
-    <string name="gate_unlock">GATE IS UNLOCKED!</string>
+    <string name="gate_unlock">Gate is Unlocked!\nPlease Enter.</string>
     <string name="some_message">SOME\nMESSAGE</string>
     <string name="button_text">LOCK</string>
 
@@ -24,8 +24,10 @@
     <string name="eight">8</string>
     <string name="nine">9</string>
     <string name="zero">0</string>
-    <string name="Clear">CLEAR</string>
-    <string name="dot">.</string>
+    <string name="Clear">C</string>
+    <string name="Unlock">unlock</string>
+    <string name="Call_owners">Call owners</string>
+    <string name="Scheduled_users">Scheduled users</string>
     <string name="title_activity_usb_unlock">UsbUnlock</string>
 
     <string name="ble_not_supported">BLE is not supported</string>

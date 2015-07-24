@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -46,6 +47,7 @@ public class FullscreenActivity extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
+    private ViewFlipper viewFlipper;
 
     private static final int LOCK = 2;
     private static final int UNLOCK = 1;
@@ -58,20 +60,23 @@ public class FullscreenActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Toast.makeText(getApplicationContext(),
+                "Booted Up", Toast.LENGTH_SHORT).show();
         setContentView(R.layout.activity_fullscreen2);
+        viewFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
 
         //final View controlsView = findViewById(R.id.fullscreen_content_controls);
-        final View contentView = findViewById(R.id.fullscreen_content);
+        //final View contentView = findViewById(R.id.fullscreen_content);
 
         // Hides the Action Bar.
         getActionBar().hide();
         usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
 
-        String url ="http://digidoor.herokuapp.com/api/v1/owners.json";
+        //GET Request URL which defines the pin.
+        String url ="http://digidoor.herokuapp.com/api/v1/owners/1.json";
         requestData(url);
 
-        //Invoke NumbPad.
+        //Invoke NumbPad fragment to prompt for pin.
         setupNumbpad();
 
 
@@ -79,6 +84,7 @@ public class FullscreenActivity extends Activity {
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 sendCommand(LOCK);
+                viewFlipper.showPrevious();
 
                 Toast.makeText(getApplicationContext(),
                         "Gate is now locked.", Toast.LENGTH_SHORT).show();
@@ -299,29 +305,38 @@ public class FullscreenActivity extends Activity {
         //delayedHide(100);
     }
 
-    //public String pin = "";
     private void setupNumbpad() {
 
-        //new HttpGet().execute("http://digidoor.herokuapp.com/api/v1/owners");
-
-        //final String pinStr = getPin();
-        Toast.makeText(getApplicationContext(),
-                "Print final pinStr: " + pinStr, Toast.LENGTH_SHORT).show();
+        //creates a delay before toasting the pin out to compensate for GET request time delay.
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(),
+                        "Print final pinStr: " + pinStr, Toast.LENGTH_SHORT).show();
+            }
+        }, 2000);
 
         // create an instance of NumbPad
         NumbPad np = new NumbPad();
+
         // optionally set additional title
         np.setAdditionalText("Please Enter Pin:");
+
         // show the NumbPad to capture input.
         np.show(this, "SAMSUNG DIGIDOOR", NumbPad.HIDE_INPUT,
                 new NumbPad.numbPadInterface() {
+
                     // This is called when the user click the 'Ok' button on the dialog
                     // value is the captured input from the dialog.
                     public String numPadInputValue(String value) {
+
                         if (value.equals(pinStr)) {
-                            // do something here
+                            viewFlipper.showNext();
+
                             Toast.makeText(getApplicationContext(),
                                     "Pin: " + pinStr + ". Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
+
                             //Sends signal through USB to Arduino to unlock gate
                             sendCommand(UNLOCK);
                         } else {
@@ -329,12 +344,11 @@ public class FullscreenActivity extends Activity {
                             // the captured input is not valid
                             Toast.makeText(getApplicationContext(),
                                     "Pin is incorrect, please try again.", Toast.LENGTH_SHORT).show();
+
                             Intent intent = new Intent(getApplicationContext(), FullscreenActivity.class);
                             startActivity(intent);
                             finish();
                         }
-
-
                         return null;
                     }
 
@@ -348,54 +362,6 @@ public class FullscreenActivity extends Activity {
                     }
                 });
     }
-
-    /*public String getPin() {
-        String pinStr = "";
-        String str = callURL("http://digidoor.herokuapp.com/api/v1/owners");
-        JSONArray aryJSONStrings;
-        try {
-            aryJSONStrings = new JSONArray(str);
-            for (int i = 0; i < aryJSONStrings.length(); i++) {
-                int pin = aryJSONStrings.getJSONObject(i).getInt("pin");
-                pinStr = Integer.toString(pin);
-                Toast.makeText(getApplicationContext(),
-                        "getPin: " + pinStr, Toast.LENGTH_SHORT).show();
-            }
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return pinStr;
-    }
-
-    public static String callURL(String myURL) {
-        //System.out.println("Requested URL:" + myURL);
-        StringBuilder sb = new StringBuilder();
-        URLConnection urlConn = null;
-        InputStreamReader in = null;
-        try {
-            URL url = new URL(myURL);
-            urlConn = url.openConnection();
-            if (urlConn != null)
-                urlConn.setReadTimeout(60 * 1000);
-            if (urlConn != null && urlConn.getInputStream() != null) {
-                in = new InputStreamReader(urlConn.getInputStream(),
-                        Charset.defaultCharset());
-                BufferedReader bufferedReader = new BufferedReader(in);
-                if (bufferedReader != null) {
-                    int cp;
-                    while ((cp = bufferedReader.read()) != -1) {
-                        sb.append((char) cp);
-                    }
-                    bufferedReader.close();
-                }
-            }
-            in.close();
-        } catch (Exception e) {
-            throw new RuntimeException("Exception while calling URL:"+ myURL, e);
-        }
-        return sb.toString();
-    }*/
 
     /***
      * This method takes in the HTTP address and performs a GET request
@@ -412,6 +378,7 @@ public class FullscreenActivity extends Activity {
                     public void onResponse(String response) {
                         /*Toast.makeText(getApplicationContext(),
                                 "Response is: "+ response, Toast.LENGTH_LONG).show();*/
+                        response = "[" + response + "]";
 
                         try {
                             JSONArray array = new JSONArray(response);
