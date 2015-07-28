@@ -1,6 +1,8 @@
 package com.example.android.digidoor_gate;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -23,11 +25,16 @@ import android.widget.ViewFlipper;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.android.digidoor_gate.util.SystemUiHider;
 
-import org.json.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -52,33 +59,35 @@ public class FullscreenActivity extends Activity {
     private static final int LOCK = 2;
     private static final int UNLOCK = 1;
     private static final int REQUEST_ENABLE_BT = 1;
+    private static int REQUEST_CODE = 301;
+    public static boolean END_CALL = false;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 1000;
-    public static String pinStr = "";
 
+    //GET Request URL which defines the pin.
+    private String urlOwners ="http://digidoor.herokuapp.com/api/v1/owners.json";
+    public static List<String> pinList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Toast.makeText(getApplicationContext(),
                 "Booted Up", Toast.LENGTH_SHORT).show();
-        setContentView(R.layout.activity_fullscreen2);
-        viewFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
 
-        //final View controlsView = findViewById(R.id.fullscreen_content_controls);
-        //final View contentView = findViewById(R.id.fullscreen_content);
+        setContentView(R.layout.activity_fullscreen2);
+
+        viewFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
 
         // Hides the Action Bar.
         getActionBar().hide();
         usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
 
-        //GET Request URL which defines the pin.
-        String url ="http://digidoor.herokuapp.com/api/v1/owners/1.json";
-        requestData(url);
+
+        requestData(urlOwners);
 
         //Invoke NumbPad fragment to prompt for pin.
         setupNumbpad();
-
+        //setupScheduledAccess();
 
         Button button = (Button) findViewById(R.id.button_lock);
         button.setOnClickListener(new View.OnClickListener() {
@@ -89,14 +98,24 @@ public class FullscreenActivity extends Activity {
                 Toast.makeText(getApplicationContext(),
                         "Gate is now locked.", Toast.LENGTH_SHORT).show();
 
-                //Re-invoke an instance of the NumbPad.
-                setupNumbpad();
+                Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
+                int mPendingIntentId = 123456;
+                PendingIntent mPendingIntent = PendingIntent.getActivity(
+                        getApplicationContext(), mPendingIntentId,
+                        mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+                AlarmManager mgr = (AlarmManager)getApplicationContext().getSystemService(
+                        getApplicationContext().ALARM_SERVICE);
+                mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+                System.exit(0);
+
+                /*//Re-invoke an instance of the NumbPad.
+                setupNumbpad();*/
             }
         });
 
-
-
         mHandler = new Handler();
+
+        //*********** BLUETOOTH onCreate start*****************************************************
 
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
@@ -115,14 +134,28 @@ public class FullscreenActivity extends Activity {
         if (mBluetoothAdapter == null) {
             Toast.makeText(this, R.string.error_bluetooth_not_supported, Toast.LENGTH_SHORT).show();
             finish();
-            return;
         }
-    }
+        //*********** BLUETOOTH onCreate end*******************************************************
 
+    }
 
     @Override
     public void onResume() {
         super.onResume();
+
+        if(END_CALL){
+            Toast.makeText(getApplicationContext(),
+                    "END CALL LALALALALALALALALALLALALALALALALA", Toast.LENGTH_SHORT).show();
+
+            END_CALL = false;
+            Intent mStartActivity = new Intent(this, FullscreenActivity.class);
+            int mPendingIntentId = 123456;
+            PendingIntent mPendingIntent = PendingIntent.getActivity(this, mPendingIntentId,
+                    mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+            AlarmManager mgr = (AlarmManager)this.getSystemService(this.ALARM_SERVICE);
+            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+            System.exit(0);
+        }
 
         Intent intent = getIntent();
         String action = intent.getAction();
@@ -144,15 +177,15 @@ public class FullscreenActivity extends Activity {
             }
         }
 
-        // Initializes list view adapter.
-        //mLeDeviceListAdapter = new LeDeviceListAdapter();
-        //setListAdapter(mLeDeviceListAdapter);
         scanLeDevice(true);
     }
 
 
+    //*********** BLUETOOTH implementation start***************************************************
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Toast.makeText(getApplicationContext(),
+                "Request Code: " + Integer.toString(requestCode), Toast.LENGTH_LONG).show();
         // User chose not to enable Bluetooth.
         if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
             finish();
@@ -294,17 +327,18 @@ public class FullscreenActivity extends Activity {
             }
         }
     }
+    //*********** BLUETOOTH implementation end*****************************************************
+
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
-        //delayedHide(100);
     }
 
+    /***
+     * This method invokes the Numbpad Dialog on top of the main activity.
+     */
     private void setupNumbpad() {
 
         //creates a delay before toasting the pin out to compensate for GET request time delay.
@@ -313,7 +347,7 @@ public class FullscreenActivity extends Activity {
             @Override
             public void run() {
                 Toast.makeText(getApplicationContext(),
-                        "Print final pinStr: " + pinStr, Toast.LENGTH_SHORT).show();
+                        "Print final pinStr: " + pinList.get(0), Toast.LENGTH_SHORT).show();
             }
         }, 2000);
 
@@ -327,15 +361,25 @@ public class FullscreenActivity extends Activity {
         np.show(this, "SAMSUNG DIGIDOOR", NumbPad.HIDE_INPUT,
                 new NumbPad.numbPadInterface() {
 
-                    // This is called when the user click the 'Ok' button on the dialog
+                    // This is called when the user click the 'unlock' button on the dialog
                     // value is the captured input from the dialog.
                     public String numPadInputValue(String value) {
 
-                        if (value.equals(pinStr)) {
+                        boolean pinValid = false;
+                        String usedPin = "";
+
+                        for(String pin : pinList){
+                            if (value.equals(pin)){
+                                pinValid = true;
+                                usedPin = value;
+                            }
+                        }
+
+                        if (pinValid) {
                             viewFlipper.showNext();
 
                             Toast.makeText(getApplicationContext(),
-                                    "Pin: " + pinStr + ". Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
+                                    "Pin: " + usedPin + ". Pin is correct, please enter.", Toast.LENGTH_SHORT).show();
 
                             //Sends signal through USB to Arduino to unlock gate
                             sendCommand(UNLOCK);
@@ -363,39 +407,46 @@ public class FullscreenActivity extends Activity {
                 });
     }
 
+
+    private void setupScheduledAccess(){
+        ScheduledAccess sa = new ScheduledAccess();
+
+        // optionally set additional title
+        sa.setAdditionalText("Please Select Your Name:");
+
+        sa.showDialog(this);
+    }
+
+
+
     /***
      * This method takes in the HTTP address and performs a GET request
      * to retrieve the pin from the server database.
      * @param uri
+     * GET Request URL which defines the pin.
      */
     private void requestData(String uri){
 
-        StringRequest request = new StringRequest(uri,
-
-                new Response.Listener<String>() {
+        JsonArrayRequest request = new JsonArrayRequest(uri,
+                new Response.Listener<JSONArray>() {
 
                     @Override
-                    public void onResponse(String response) {
+                    public void onResponse(JSONArray response) {
                         /*Toast.makeText(getApplicationContext(),
                                 "Response is: "+ response, Toast.LENGTH_LONG).show();*/
-                        response = "[" + response + "]";
 
-                        try {
-                            JSONArray array = new JSONArray(response);
-                            for (int i = 0; i < array.length(); i++) {
-                                int pinNumber = array.getJSONObject(i).getInt("pin");
-                                pinStr = Integer.toString(pinNumber);
+                        for (int i = 0; i < response.length(); i++) {
+                            try {
+                                JSONObject object = response.getJSONObject(i);
+                                pinList.add(Integer.toString(object.getInt("pin")));
+
+                            } catch (JSONException e) {
+                                Toast.makeText(getApplicationContext(),
+                                        "JSONException", Toast.LENGTH_SHORT).show();
                             }
-                            /*Toast.makeText(getApplicationContext(),
-                                    "pinStr is: "+ pinStr, Toast.LENGTH_LONG).show();*/
-                        } catch (JSONException e) {
-                            Toast.makeText(getApplicationContext(),
-                                    "JSONException", Toast.LENGTH_SHORT).show();
                         }
                     }
-                },
-
-                new Response.ErrorListener() {
+                }, new Response.ErrorListener() {
 
                     @Override
                     public void onErrorResponse(VolleyError ex) {
@@ -406,6 +457,7 @@ public class FullscreenActivity extends Activity {
 
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
-;    }
+    }
 
 }
+

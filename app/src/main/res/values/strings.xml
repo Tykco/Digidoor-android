@@ -30,6 +30,8 @@
     <string name="Scheduled_users">Scheduled users</string>
     <string name="title_activity_usb_unlock">UsbUnlock</string>
 
+    <string name="Back">Back</string>
+
     <string name="ble_not_supported">BLE is not supported</string>
     <string name="label_data">Data:</string>
     <string name="label_device_address">Device address:</string>

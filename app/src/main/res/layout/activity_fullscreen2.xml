@@ -23,6 +23,7 @@
                 android:layout_height="match_parent"
                 android:id="@+id/textView"
                 android:layout_weight="1.11" />
+
         </LinearLayout>
 
         <LinearLayout

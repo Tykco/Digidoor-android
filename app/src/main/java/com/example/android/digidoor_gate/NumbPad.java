@@ -2,26 +2,27 @@ package com.example.android.digidoor_gate;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Intent;
 import android.graphics.Point;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Handler;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
-import android.content.Intent;
-import android.app.PendingIntent;
-import android.app.AlarmManager;
+
 
 public class NumbPad {
     // flag values
     public static int NOFLAGS = 0;
     public static int HIDE_INPUT = 1;
     public static int HIDE_PROMPT = 2;
-
-    static Float amountDue;
+    private static int REQUEST_CODE = 301;
 
     static TextView prompt;
     static TextView promptValue;
@@ -48,6 +49,9 @@ public class NumbPad {
     private int flag_hideInput = 0;
     private int flag_hidePrompt = 0;
 
+    TelephonyManager manager;
+    StatePhoneReceiver myPhoneStateListener;
+
     public interface numbPadInterface {
         public String numPadInputValue(String value);
         public String numPadCanceled();
@@ -68,46 +72,38 @@ public class NumbPad {
         flag_hidePrompt = (inFlags / 2) % 2;
 
         final Dialog dialog = new Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-        //final AlertDialog.Builder dlg = new AlertDialog.Builder(activity, AlertDialog.THEME_TRADITIONAL);
 
-        // (That new View is just there to have something inside the dialog that can grow big enough to cover the whole screen.)
-
-
-
-       /* if (flag_hidePrompt == 0) {
-            dlg.setTitle(promptString);
-        }*/
         // Inflate the dialog layout
         LayoutInflater inflater = activity.getLayoutInflater();
-        final View iView = inflater.inflate(R.layout.numb_pad, null, false);
+        final View npView = inflater.inflate(R.layout.numb_pad, null, false);
 
         // create code to handle the change tender
-        prompt = (TextView) iView.findViewById(R.id.promptText);
+        /*prompt = (TextView) npView.findViewById(R.id.promptText);
         prompt.setText(addl_text);
         if (addl_text.equals("")) {
             prompt.setVisibility(View.GONE);
-        }
-        promptValue = (TextView) iView.findViewById(R.id.promptValue);
+        }*/
+        promptValue = (TextView) npView.findViewById(R.id.promptValue);
 
         // Defaults
         value = "";
         promptValue.setText(" ");
 
         Typeface typeface = Typeface.createFromAsset(activity.getAssets(), "fonts/Gotham-light.ttf");
-        btn1 = (Button) iView.findViewById(R.id.button1);
-        btn2 = (Button) iView.findViewById(R.id.button2);
-        btn3 = (Button) iView.findViewById(R.id.button3);
-        btn4 = (Button) iView.findViewById(R.id.button4);
-        btn5 = (Button) iView.findViewById(R.id.button5);
-        btn6 = (Button) iView.findViewById(R.id.button6);
-        btn7 = (Button) iView.findViewById(R.id.button7);
-        btn8 = (Button) iView.findViewById(R.id.button8);
-        btn9 = (Button) iView.findViewById(R.id.button9);
-        btn0 = (Button) iView.findViewById(R.id.button0);
-        btnC = (Button) iView.findViewById(R.id.buttonC);
-        btnUnlock = (Button) iView.findViewById(R.id.buttonUnlock);
-        btnScheduledUsers = (Button) iView.findViewById(R.id.buttonScheduled);
-        btnCallOwners = (Button) iView.findViewById(R.id.buttonCall);
+        btn1 = (Button) npView.findViewById(R.id.button1);
+        btn2 = (Button) npView.findViewById(R.id.button2);
+        btn3 = (Button) npView.findViewById(R.id.button3);
+        btn4 = (Button) npView.findViewById(R.id.button4);
+        btn5 = (Button) npView.findViewById(R.id.button5);
+        btn6 = (Button) npView.findViewById(R.id.button6);
+        btn7 = (Button) npView.findViewById(R.id.button7);
+        btn8 = (Button) npView.findViewById(R.id.button8);
+        btn9 = (Button) npView.findViewById(R.id.button9);
+        btn0 = (Button) npView.findViewById(R.id.button0);
+        btnC = (Button) npView.findViewById(R.id.buttonC);
+        btnUnlock = (Button) npView.findViewById(R.id.buttonUnlock);
+        btnScheduledUsers = (Button) npView.findViewById(R.id.buttonScheduled);
+        btnCallOwners = (Button) npView.findViewById(R.id.buttonCall);
 
         btn1.setTypeface(typeface);
         btn2.setTypeface(typeface);
@@ -179,7 +175,8 @@ public class NumbPad {
                 appendNumber("0");
             }
         });
-        dialog.setContentView(iView);
+
+        dialog.setContentView(npView);
 
         btnUnlock.setOnClickListener(new Button.OnClickListener() {
             @Override
@@ -189,27 +186,51 @@ public class NumbPad {
             }
         });
 
+        /***
+         * Initiate calling function on button press.
+         */
         btnCallOwners.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent callIntent = new Intent(Intent.ACTION_CALL);
-                callIntent.setData(Uri.parse("tel:+6590229794"));
+
+                //To be notified of changes of the phone state create an instance
+                //of the TelephonyManager class and the StatePhoneReceiver class
+                myPhoneStateListener = new StatePhoneReceiver(activity);
+                manager = ((TelephonyManager) activity.getSystemService(activity.TELEPHONY_SERVICE));
+
+                manager.listen(myPhoneStateListener,
+                        PhoneStateListener.LISTEN_CALL_STATE); // start listening to the phone changes
+                StatePhoneReceiver.callFromApp=true;
+
+                Intent callIntent = new Intent(android.content.Intent.ACTION_CALL,
+                        Uri.parse("tel:" + "+6590170375")); // Make the call
                 activity.startActivity(callIntent);
 
-                Intent mStartActivity = new Intent(activity, FullscreenActivity.class);
-                int mPendingIntentId = 123456;
-                PendingIntent mPendingIntent = PendingIntent.getActivity(activity, mPendingIntentId,
-                        mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-                AlarmManager mgr = (AlarmManager)activity.getSystemService(activity.ALARM_SERVICE);
-                mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-                System.exit(0);
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        FullscreenActivity.END_CALL = true;
+                    }
+                }, 10000);
+
+                //Intent callIntent = new Intent(Intent.ACTION_CALL);
+                //callIntent.setData(Uri.parse("tel:+6590170375"));
+
+                //activity.startActivityForResult(callIntent, REQUEST_CODE);
+                //activity.setResult(REQUEST_CODE);
             }
         });
 
         btnScheduledUsers.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ScheduledAccess sa = new ScheduledAccess();
 
+                // optionally set additional title
+                sa.setAdditionalText("Please Select Your Name:");
+
+                sa.showDialog(activity);
             }
         });
         /*dlg.setPositiveButton("UNLOCK", new DialogInterface.OnClickListener() {
@@ -228,8 +249,6 @@ public class NumbPad {
 */
         //dlg.show();
 
-        //final AlertDialog d = dlg.setView(iView).create();
-
         //dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         WindowManager wm = (WindowManager) activity.getSystemService(activity.WINDOW_SERVICE); // for activity use context instead of getActivity()
@@ -241,9 +260,6 @@ public class NumbPad {
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
-        //lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        //lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
         lp.width = width-20;
         lp.height = height-200;
 
@@ -269,5 +285,5 @@ public class NumbPad {
             promptValue.setText(" ");
         }
     }
-
 }
+
