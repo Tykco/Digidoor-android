@@ -10,26 +10,26 @@ import android.widget.TextView;
 
 import java.util.List;
 
-public class ScheduledListAdapter extends BaseAdapter {
+public class OwnersListAdapter extends BaseAdapter {
 
     private Activity activity;
     private LayoutInflater inflater;
-    private List<User> scheduledUserItems;
+    private List<User> ownersUserItems;
 
-    public ScheduledListAdapter(Activity activity, List<User> scheduledUserItems){
+    public OwnersListAdapter(Activity activity, List<User> ownersUserItems){
         this.activity = activity;
-        this.scheduledUserItems = scheduledUserItems;
+        this.ownersUserItems = ownersUserItems;
     }
 
 
     @Override
     public int getCount() {
-        return scheduledUserItems.size();
+        return ownersUserItems.size();
     }
 
     @Override
     public Object getItem(int location) {
-        return scheduledUserItems.get(location);
+        return ownersUserItems.get(location);
     }
 
     @Override
@@ -50,13 +50,13 @@ public class ScheduledListAdapter extends BaseAdapter {
         //TextView phoneNumber = (TextView) convertView.findViewById(R.id.phone_number);
 
         // getting user data for the row
-        User su = scheduledUserItems.get(position);
+        User owner = ownersUserItems.get(position);
 
         // name
-        name.setText("I'm " + su.getName() + ".");
+        name.setText(owner.getName());
 
         // phone number
-        //phoneNumber.setText("Phone No.: " + String.valueOf(su.getPhoneNumber()));
+        //phoneNumber.setText("Phone No.: " + String.valueOf(owner.getPhoneNumber()));
 
 
         return convertView;

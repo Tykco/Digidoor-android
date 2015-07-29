@@ -35,6 +35,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -64,9 +67,12 @@ public class FullscreenActivity extends Activity {
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 1000;
 
+    //GET Request URL for status of remote unlock.
+    private String urlRemoteUnlock ="http://digidoor.herokuapp.com/api/v1/unlocks.json";
     //GET Request URL which defines the pin.
     private String urlOwners ="http://digidoor.herokuapp.com/api/v1/owners.json";
     public static List<String> pinList = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +89,7 @@ public class FullscreenActivity extends Activity {
         usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
 
 
-        requestData(urlOwners);
+        requestPin(urlOwners);
 
         //Invoke NumbPad fragment to prompt for pin.
         setupNumbpad();
@@ -107,15 +113,15 @@ public class FullscreenActivity extends Activity {
                         getApplicationContext().ALARM_SERVICE);
                 mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
                 System.exit(0);
-
-                /*//Re-invoke an instance of the NumbPad.
-                setupNumbpad();*/
             }
         });
 
-        mHandler = new Handler();
+        //Initialize thread to query lock status for remote unlocking.
+        remoteUnlockThread();
 
         //*********** BLUETOOTH onCreate start*****************************************************
+
+        mHandler = new Handler();
 
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
@@ -346,8 +352,14 @@ public class FullscreenActivity extends Activity {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(),
-                        "Print final pinStr: " + pinList.get(0), Toast.LENGTH_SHORT).show();
+                if(pinList.size() > 0){
+                    Toast.makeText(getApplicationContext(),
+                            "Pin of 1st Owner: " + pinList.get(0), Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(getApplicationContext(),
+                            "Pin of 1st Owner: pinList empty", Toast.LENGTH_SHORT).show();
+                }
+
             }
         }, 2000);
 
@@ -368,8 +380,8 @@ public class FullscreenActivity extends Activity {
                         boolean pinValid = false;
                         String usedPin = "";
 
-                        for(String pin : pinList){
-                            if (value.equals(pin)){
+                        for (String pin : pinList) {
+                            if (value.equals(pin)) {
                                 pinValid = true;
                                 usedPin = value;
                             }
@@ -408,13 +420,16 @@ public class FullscreenActivity extends Activity {
     }
 
 
-    private void setupScheduledAccess(){
-        ScheduledAccess sa = new ScheduledAccess();
+    private void remoteUnlockThread(){
+        Runnable remoteUnlockRunnable = new Runnable() {
+            public void run() {
+                requestRemoteStatus(urlRemoteUnlock);
 
-        // optionally set additional title
-        sa.setAdditionalText("Please Select Your Name:");
+            }
+        };
 
-        sa.showDialog(this);
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(remoteUnlockRunnable, 0, 10, TimeUnit.SECONDS);
     }
 
 
@@ -425,7 +440,7 @@ public class FullscreenActivity extends Activity {
      * @param uri
      * GET Request URL which defines the pin.
      */
-    private void requestData(String uri){
+    private void requestPin(String uri){
 
         JsonArrayRequest request = new JsonArrayRequest(uri,
                 new Response.Listener<JSONArray>() {
@@ -459,5 +474,52 @@ public class FullscreenActivity extends Activity {
         queue.add(request);
     }
 
+    /***
+     * This method takes in the HTTP address and performs a GET request
+     * to retrieve the status of the remote unlocking faeture
+     * @param uri
+     * GET Request URL which defines the pin.
+     */
+    private void requestRemoteStatus(String uri){
+
+        JsonArrayRequest request = new JsonArrayRequest(uri,
+                new Response.Listener<JSONArray>() {
+
+                    @Override
+                    public void onResponse(JSONArray response) {
+
+                        for (int i = 0; i < response.length(); i++) {
+                            try {
+                                JSONObject object = response.getJSONObject(i);
+
+                                /*Toast.makeText(getApplicationContext(),
+                                        "Status of remote unlock: " + Boolean.toString(
+                                                object.getBoolean("status")),
+                                        Toast.LENGTH_SHORT).show();*/
+
+                                if (object.getBoolean("status") == false){
+                                    break;
+                                }else{
+                                    sendCommand(UNLOCK);
+                                }
+
+                            } catch (JSONException e) {
+                                Toast.makeText(getApplicationContext(),
+                                        "JSONException", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError ex) {
+                Toast.makeText(getApplicationContext(),
+                        "Volley Error!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(request);
+    }
 }
 

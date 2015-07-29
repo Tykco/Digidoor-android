@@ -17,6 +17,7 @@ public class StatePhoneReceiver extends PhoneStateListener {
         this.context = context;
     }
 
+
     @Override
     public void onCallStateChanged(int state, String incomingNumber) {
         super.onCallStateChanged(state, incomingNumber);
@@ -47,7 +48,8 @@ public class StatePhoneReceiver extends PhoneStateListener {
             case TelephonyManager.CALL_STATE_IDLE: //Call is finished
                 if (callFromOffHook) {
                     callFromOffHook=false;
-                    AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    AudioManager audioManager = (AudioManager)
+                            context.getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setMode(AudioManager.MODE_NORMAL); //Deactivate loudspeaker
                     /*manager.listen(myPhoneStateListener, // Remove listener
                             PhoneStateListener.LISTEN_NONE);*/

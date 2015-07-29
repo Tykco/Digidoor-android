@@ -2,12 +2,8 @@ package com.example.android.digidoor_gate;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Intent;
 import android.graphics.Point;
 import android.graphics.Typeface;
-import android.net.Uri;
-import android.os.Handler;
-import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -78,11 +74,11 @@ public class NumbPad {
         final View npView = inflater.inflate(R.layout.numb_pad, null, false);
 
         // create code to handle the change tender
-        /*prompt = (TextView) npView.findViewById(R.id.promptText);
+        prompt = (TextView) npView.findViewById(R.id.promptText);
         prompt.setText(addl_text);
         if (addl_text.equals("")) {
             prompt.setVisibility(View.GONE);
-        }*/
+        }
         promptValue = (TextView) npView.findViewById(R.id.promptValue);
 
         // Defaults
@@ -192,40 +188,19 @@ public class NumbPad {
         btnCallOwners.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
+                CallOwnersDialog co = new CallOwnersDialog();
 
-                //To be notified of changes of the phone state create an instance
-                //of the TelephonyManager class and the StatePhoneReceiver class
-                myPhoneStateListener = new StatePhoneReceiver(activity);
-                manager = ((TelephonyManager) activity.getSystemService(activity.TELEPHONY_SERVICE));
+                // optionally set additional title
+                co.setAdditionalText("Select Owner to Call");
 
-                manager.listen(myPhoneStateListener,
-                        PhoneStateListener.LISTEN_CALL_STATE); // start listening to the phone changes
-                StatePhoneReceiver.callFromApp=true;
-
-                Intent callIntent = new Intent(android.content.Intent.ACTION_CALL,
-                        Uri.parse("tel:" + "+6590170375")); // Make the call
-                activity.startActivity(callIntent);
-
-                final Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        FullscreenActivity.END_CALL = true;
-                    }
-                }, 10000);
-
-                //Intent callIntent = new Intent(Intent.ACTION_CALL);
-                //callIntent.setData(Uri.parse("tel:+6590170375"));
-
-                //activity.startActivityForResult(callIntent, REQUEST_CODE);
-                //activity.setResult(REQUEST_CODE);
+                co.showDialog(activity);
             }
         });
 
         btnScheduledUsers.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ScheduledAccess sa = new ScheduledAccess();
+                ScheduledAccessDialog sa = new ScheduledAccessDialog();
 
                 // optionally set additional title
                 sa.setAdditionalText("Please Select Your Name:");
@@ -233,25 +208,8 @@ public class NumbPad {
                 sa.showDialog(activity);
             }
         });
-        /*dlg.setPositiveButton("UNLOCK", new DialogInterface.OnClickListener() {
-            public void onClick(final DialogInterface dlg, int sumthin) {
-                dlg.dismiss();
-                postrun.numPadInputValue(me.getValue());
-            }
-        });*/
-/*
-        dlg.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dlg, int sumthin) {
-                dlg.dismiss();
-                postrun.numPadCanceled();
-            }
-        });
-*/
-        //dlg.show();
 
-        //dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        WindowManager wm = (WindowManager) activity.getSystemService(activity.WINDOW_SERVICE); // for activity use context instead of getActivity()
+        WindowManager wm = (WindowManager) activity.getSystemService(activity.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay(); // getting the screen size of device
         Point size = new Point();
         display.getSize(size);

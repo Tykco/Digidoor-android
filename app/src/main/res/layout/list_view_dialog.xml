@@ -6,7 +6,10 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:paddingBottom="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="15dp">
 
         <TextView
             android:id="@+id/promptSAText"
@@ -24,9 +27,11 @@
         android:id="@+id/listView"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:divider="@color/list_divider"
-        android:dividerHeight="1dp"
-        android:listSelector="@drawable/list_row_selector" />
+        android:dividerHeight="8dp"
+        android:divider="@android:color/black"
+        android:listSelector="@android:color/black"
+        android:paddingLeft="25dp"
+        android:paddingRight="25dp" />
 
     <LinearLayout
         android:orientation="horizontal"

@@ -1,12 +1,15 @@
 package com.example.android.digidoor_gate;
 
-
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Point;
 import android.graphics.Typeface;
-import android.telephony.SmsManager;
+import android.net.Uri;
+import android.os.Handler;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,7 +18,6 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -30,21 +32,21 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScheduledAccess {
+public class CallOwnersDialog {
 
-    static TextView saPrompt;
+    static TextView callOwnerPrompt;
     static Button btnBack;
     private String additional_text = "";
-
+    private String ownerPhoneNumber = "";
 
     // Scheduled users json url
-    private static final String url = "http://digidoor.herokuapp.com/api/v1/scheduled_accesses.json";
+    private static final String urlOwners ="http://digidoor.herokuapp.com/api/v1/owners.json";
 
     private ProgressDialog pDialog;
-    private List<ScheduledUser> userList = new ArrayList<>();
-    private ScheduledListAdapter adapter;
-    private String numberToSms;
-    private String messageToSms = ", welcome! Please use this one-time pin to enter: ";
+    private List<User> ownersList = new ArrayList<>();
+    private OwnersListAdapter adapter;
+    TelephonyManager manager;
+    StatePhoneReceiver myPhoneStateListener;
 
     public void setAdditionalText(String inTxt) {
         additional_text = inTxt;
@@ -56,13 +58,13 @@ public class ScheduledAccess {
 
         // Inflate the dialog layout
         LayoutInflater inflater = activity.getLayoutInflater();
-        final View saView = inflater.inflate(R.layout.scheduled_access_dialog, null, false);
+        final View saView = inflater.inflate(R.layout.list_view_dialog, null, false);
 
         // create code to handle the change tender
-        saPrompt = (TextView) saView.findViewById(R.id.promptSAText);
-        saPrompt.setText(additional_text);
+        callOwnerPrompt = (TextView) saView.findViewById(R.id.promptSAText);
+        callOwnerPrompt.setText(additional_text);
         if (additional_text.equals("")) {
-            saPrompt.setVisibility(View.GONE);
+            callOwnerPrompt.setVisibility(View.GONE);
         }
         Typeface typeface = Typeface.createFromAsset(activity.getAssets(), "fonts/Gotham-light.ttf");
 
@@ -72,13 +74,6 @@ public class ScheduledAccess {
 
         btnBack.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
-                /*Intent mStartActivity = new Intent(activity, FullscreenActivity.class);
-                int mPendingIntentId = 123456;
-                PendingIntent mPendingIntent = PendingIntent.getActivity(activity, mPendingIntentId,
-                        mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-                AlarmManager mgr = (AlarmManager)activity.getSystemService(activity.ALARM_SERVICE);
-                mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-                System.exit(0);*/
                 saDialog.dismiss();
             }
         });
@@ -87,24 +82,41 @@ public class ScheduledAccess {
         saDialog.setContentView(saView);
 
         ListView listView = (ListView) saDialog.findViewById(R.id.listView);
-        adapter = new ScheduledListAdapter(activity, userList);
+        adapter = new OwnersListAdapter(activity, ownersList);
         listView.setAdapter(adapter);
 
         /***
-         * Send scheduled user his/her temp pin via SMS.
+         * Call specific owner.
          */
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
+                //established the specific owner clicked on in the list
                 Object object = adapter.getItem(position);
-                ScheduledUser scheduledUser = (ScheduledUser) object;
-                Toast.makeText(activity,
-                        "Pressed on: " + scheduledUser.getName(), Toast.LENGTH_LONG).show();
-                numberToSms = "+65" + Integer.toString(scheduledUser.getPhoneNumber());
-                messageToSms = "Hi " + scheduledUser.getName() + messageToSms + Integer.toString(scheduledUser.getPin());
-                sendSms(activity, numberToSms, messageToSms, scheduledUser.getName());
-                FullscreenActivity.pinList.add(Integer.toString(scheduledUser.getPin()));
+                User owner = (User) object;
+                ownerPhoneNumber = "+65" + Integer.toString(owner.getPhoneNumber());
+
+                //To be notified of changes of the phone state create an instance
+                //of the TelephonyManager class and the StatePhoneReceiver class
+                myPhoneStateListener = new StatePhoneReceiver(activity);
+                manager = ((TelephonyManager) activity.getSystemService(activity.TELEPHONY_SERVICE));
+
+                manager.listen(myPhoneStateListener,
+                        PhoneStateListener.LISTEN_CALL_STATE); // start listening to the phone changes
+                StatePhoneReceiver.callFromApp=true;
+
+                Intent callIntent = new Intent(android.content.Intent.ACTION_CALL,
+                        Uri.parse("tel:" + ownerPhoneNumber)); // Make the call
+                activity.startActivity(callIntent);
+
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        FullscreenActivity.END_CALL = true;
+                    }
+                }, 10000);
             }
         });
 
@@ -115,7 +127,7 @@ public class ScheduledAccess {
 
 
         // Creating volley request obj
-        JsonArrayRequest userReq = new JsonArrayRequest(url,
+        JsonArrayRequest ownersReq = new JsonArrayRequest(urlOwners,
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
@@ -126,28 +138,17 @@ public class ScheduledAccess {
                             try {
 
                                 JSONObject obj = response.getJSONObject(i);
-                                ScheduledUser scheduledUser = new ScheduledUser();
+                                User ownersUser = new User();
 
-                                scheduledUser.setName(obj.getString("name"));
-                                scheduledUser.setPhoneNumber(obj.getInt("phoneno"));
-                                scheduledUser.setPin(obj.getInt("pin"));
-                                //scheduledUser.setThumbnailUrl(obj.getString("image"));
+                                ownersUser.setName(obj.getString("name"));
+                                ownersUser.setPhoneNumber(obj.getInt("phoneno"));
 
-                                /*// Genre is json array
-                                JSONArray genreArry = obj.getJSONArray("genre");
-                                ArrayList<String> genre = new ArrayList<String>();
-                                for (int j = 0; j < genreArry.length(); j++) {
-                                    genre.add((String) genreArry.get(j));
-                                }
-                                movie.setGenre(genre);*/
-
-                                // adding scheduled users to scheduled users array
-                                userList.add(scheduledUser);
+                                // adding owners to owners array
+                                ownersList.add(ownersUser);
 
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-
                         }
 
                         // notifying list adapter about data changes
@@ -162,10 +163,8 @@ public class ScheduledAccess {
         });
 
         // Adding request to request queue
-        //JsonController.getInstance().addToRequestQueue(userReq);
-
         RequestQueue queue = Volley.newRequestQueue(activity);
-        queue.add(userReq);
+        queue.add(ownersReq);
 
 
         WindowManager wm = (WindowManager) activity.getSystemService(activity.WINDOW_SERVICE); // for activity use context instead of getActivity()
@@ -190,12 +189,5 @@ public class ScheduledAccess {
             pDialog.dismiss();
             pDialog = null;
         }
-    }
-
-    private void sendSms(Activity activity, String numberToSms, String messageToSms, String user){
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(numberToSms, null, messageToSms, null, null);
-        Toast.makeText(activity,
-                "Pin sent to: " + user + ".", Toast.LENGTH_LONG).show();
     }
 }

@@ -1,15 +1,15 @@
 package com.example.android.digidoor_gate;
 
 
-public class ScheduledUser {
+public class User {
     private String name;
     private int phoneNumber;
     private int pin;
 
-    public ScheduledUser(){
+    public User(){
     }
 
-    public ScheduledUser(String name, int phoneNumber, int pin){
+    public User(String name, int phoneNumber, int pin){
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.pin = pin;
