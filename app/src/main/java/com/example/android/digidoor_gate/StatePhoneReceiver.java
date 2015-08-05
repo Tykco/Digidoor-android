@@ -51,8 +51,6 @@ public class StatePhoneReceiver extends PhoneStateListener {
                     AudioManager audioManager = (AudioManager)
                             context.getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setMode(AudioManager.MODE_NORMAL); //Deactivate loudspeaker
-                    /*manager.listen(myPhoneStateListener, // Remove listener
-                            PhoneStateListener.LISTEN_NONE);*/
                 }
                 break;
         }

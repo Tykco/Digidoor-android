@@ -5,7 +5,13 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,6 +23,7 @@ import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -35,6 +42,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +63,7 @@ public class FullscreenActivity extends Activity {
     public UsbEndpoint endpointIn = null;
 
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothGatt mGatt;
     private boolean mScanning;
     private Handler mHandler;
     private ViewFlipper viewFlipper;
@@ -62,15 +71,12 @@ public class FullscreenActivity extends Activity {
     private static final int LOCK = 2;
     private static final int UNLOCK = 1;
     private static final int REQUEST_ENABLE_BT = 1;
-    private static int REQUEST_CODE = 301;
     public static boolean END_CALL = false;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 1000;
 
     //GET Request URL for status of remote unlock.
     private String urlRemoteUnlock ="http://digidoor.herokuapp.com/api/v1/unlocks.json";
-    //GET Request URL which defines the pin.
-    private String urlOwners ="http://digidoor.herokuapp.com/api/v1/owners.json";
     public static List<String> pinList = new ArrayList<>();
 
 
@@ -78,7 +84,7 @@ public class FullscreenActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Toast.makeText(getApplicationContext(),
-                "Booted Up", Toast.LENGTH_SHORT).show();
+                "Gate is now locked.", Toast.LENGTH_SHORT).show();
 
         setContentView(R.layout.activity_fullscreen2);
 
@@ -89,6 +95,7 @@ public class FullscreenActivity extends Activity {
         usbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
 
 
+        String urlOwners = "http://digidoor.herokuapp.com/api/v1/owners.json";
         requestPin(urlOwners);
 
         //Invoke NumbPad fragment to prompt for pin.
@@ -98,21 +105,12 @@ public class FullscreenActivity extends Activity {
         Button button = (Button) findViewById(R.id.button_lock);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                sendCommand(LOCK);
+                //sendCommand(LOCK);
                 viewFlipper.showPrevious();
+                setupNumbpad();
 
-                Toast.makeText(getApplicationContext(),
-                        "Gate is now locked.", Toast.LENGTH_SHORT).show();
 
-                Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
-                int mPendingIntentId = 123456;
-                PendingIntent mPendingIntent = PendingIntent.getActivity(
-                        getApplicationContext(), mPendingIntentId,
-                        mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-                AlarmManager mgr = (AlarmManager)getApplicationContext().getSystemService(
-                        getApplicationContext().ALARM_SERVICE);
-                mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-                System.exit(0);
+
             }
         });
 
@@ -158,22 +156,17 @@ public class FullscreenActivity extends Activity {
             int mPendingIntentId = 123456;
             PendingIntent mPendingIntent = PendingIntent.getActivity(this, mPendingIntentId,
                     mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-            AlarmManager mgr = (AlarmManager)this.getSystemService(this.ALARM_SERVICE);
+            AlarmManager mgr = (AlarmManager)this.getSystemService(ALARM_SERVICE);
             mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
             System.exit(0);
         }
 
-        Intent intent = getIntent();
-        String action = intent.getAction();
+        //Intent intent = getIntent();
+        //String action = intent.getAction();
+        HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
+        UsbDevice device = deviceList.get("/dev/bus/usb/002/002");
 
-        UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-        if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-            setDevice(device);
-        } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
-            if (deviceFound != null && deviceFound.equals(device)) {
-                setDevice(null);
-            }
-        }
+        setDevice(device);
         // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
         // fire an intent to display a dialog asking the user to grant permission to enable it.
         if (!mBluetoothAdapter.isEnabled()) {
@@ -214,7 +207,7 @@ public class FullscreenActivity extends Activity {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             invalidateOptionsMenu();
-            mHandler.postDelayed(runnableStart, 500);
+            //mHandler.postDelayed(runnableStart, 500);
         }
     };
 
@@ -224,7 +217,7 @@ public class FullscreenActivity extends Activity {
             mScanning = true;
             mBluetoothAdapter.startLeScan(mLeScanCallback);
             invalidateOptionsMenu();
-            mHandler.postDelayed(runnableStop, SCAN_PERIOD);
+            //mHandler.postDelayed(runnableStop, SCAN_PERIOD);
         }
     };
 
@@ -243,6 +236,103 @@ public class FullscreenActivity extends Activity {
     }
 
 
+    // Adapter for holding devices found through scanning.
+    private class LeDeviceListAdapter {
+        private ArrayList<BluetoothDevice> mLeDevices;
+        private ArrayList<String> mLeDevicesData;
+        private ArrayList<Integer> mLeDevicesRSSI;
+        public LeDeviceListAdapter() {
+            mLeDevices = new ArrayList<BluetoothDevice>();
+            mLeDevicesData = new ArrayList<String>();
+            mLeDevicesRSSI = new ArrayList<Integer>();
+        }
+
+        public void addDevice(BluetoothDevice device,int rssi, byte[] scanRecord) {
+            if(!mLeDevices.contains(device)) {
+                String s = Integer.toHexString(scanRecord[28]);
+                mLeDevices.add(device);
+                mLeDevicesData.add(s);
+                mLeDevicesRSSI.add(rssi);
+            }
+        }
+
+        public BluetoothDevice getDevice(int position) {
+            return mLeDevices.get(position);
+        }
+
+        public void clear() {
+            mLeDevices.clear();
+            mLeDevicesData.clear();
+            mLeDevicesRSSI.clear();
+        }
+
+
+        public int getCount() {
+            return mLeDevices.size();
+        }
+
+
+        public Object getItem(int i) {
+            return mLeDevices.get(i);
+        }
+
+
+        public long getItemId(int i) {
+            return i;
+        }
+
+    }
+
+    public void connectToDevice(BluetoothDevice device) {
+        if (mGatt == null) {
+            mGatt = device.connectGatt(this, false, gattCallback);
+            scanLeDevice(false);// will stop after first device detection
+        }
+    }
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            switch (newState) {
+                case BluetoothProfile.STATE_CONNECTED:
+                    Log.d("SayHi", "This is Allan");
+
+                    gatt.discoverServices();
+
+                    break;
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    break;
+                default:
+                    break;
+            }
+
+        }
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            List<BluetoothGattService> services = gatt.getServices();
+            Log.i("onServicesDiscovered", services.toString());
+            List<BluetoothGattCharacteristic> characteristics = services.get(2).getCharacteristics();
+            Log.i("charDiscovered", characteristics.get(0).getUuid().toString());
+            BluetoothGattCharacteristic characteristic = characteristics.get(0);
+            gatt.setCharacteristicNotification(characteristic, true);
+            Log.i("charNotificationChanged", Boolean.toString(gatt.setCharacteristicNotification(characteristic, true)));
+            List<BluetoothGattDescriptor> descriptors = characteristic.getDescriptors();
+            Log.i("descriptorsDiscovered", descriptors.toString());
+            BluetoothGattDescriptor desc = characteristic.getDescriptors().get(0);
+            desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            gatt.writeDescriptor(desc);
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, final   BluetoothGattCharacteristic characteristic) {
+            //read the characteristic data
+
+            int data = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8,0);
+            if (data == 1) { sendCommand(UNLOCK); }
+            Log.i("This Is the Char Value:", Integer.toString(data));
+        }
+    };
+
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
@@ -252,26 +342,26 @@ public class FullscreenActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-
-                            if (scanRecord[28] == (byte) 0xAF) {
-                                mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                                if (rssi > -65&&rssi != 0) {
-                                    sendCommand(UNLOCK);
-                                } else sendCommand(LOCK);
-
+                            Log.i("DeviceString", device.getAddress());
+                            if (device.getAddress().equals(new String("C6:16:D1:51:80:C2")))
+                            {
+                                connectToDevice(device);
                             }
                         }
                     });
                 }
             };
 
-
+    /***
+     * Sets USB device based on usb device passed in.
+     * @param device
+     */
     private void setDevice(UsbDevice device) {
         usbInterfaceFound = null;
         endpointOut = null;
         endpointIn = null;
 
-        for (int i = 0; i < (device.getInterfaceCount()-2); i++) {
+        for (int i = 0; i < (device.getInterfaceCount()); i++) {
             UsbInterface usbInterface = device.getInterface(i);
             //TextInfo.append(usbInterface.toString() + "\n");
             //TextInfo.append("\n");
@@ -322,6 +412,10 @@ public class FullscreenActivity extends Activity {
         }
     }
 
+    /***
+     * Sends a USB connection signal used to control the Arduino.
+     * @param control
+     */
     private void sendCommand(int control) {
         synchronized (this) {
 
@@ -346,22 +440,6 @@ public class FullscreenActivity extends Activity {
      * This method invokes the Numbpad Dialog on top of the main activity.
      */
     private void setupNumbpad() {
-
-        //creates a delay before toasting the pin out to compensate for GET request time delay.
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if(pinList.size() > 0){
-                    Toast.makeText(getApplicationContext(),
-                            "Pin of 1st Owner: " + pinList.get(0), Toast.LENGTH_SHORT).show();
-                }else{
-                    Toast.makeText(getApplicationContext(),
-                            "Pin of 1st Owner: pinList empty", Toast.LENGTH_SHORT).show();
-                }
-
-            }
-        }, 2000);
 
         // create an instance of NumbPad
         NumbPad np = new NumbPad();
@@ -395,15 +473,43 @@ public class FullscreenActivity extends Activity {
 
                             //Sends signal through USB to Arduino to unlock gate
                             sendCommand(UNLOCK);
+
+                            final Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
+                                    int mPendingIntentId = 123456;
+                                    PendingIntent mPendingIntent = PendingIntent.getActivity(
+                                            getApplicationContext(), mPendingIntentId,
+                                            mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+                                    AlarmManager mgr = (AlarmManager)getApplicationContext().getSystemService(
+                                            getApplicationContext().ALARM_SERVICE);
+                                    mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+                                    System.exit(0);
+                                }
+                            }, 7500);
                         } else {
                             // generate a toast message to inform the user that
                             // the captured input is not valid
                             Toast.makeText(getApplicationContext(),
                                     "Pin is incorrect, please try again.", Toast.LENGTH_SHORT).show();
 
-                            Intent intent = new Intent(getApplicationContext(), FullscreenActivity.class);
-                            startActivity(intent);
-                            finish();
+                            final Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
+                                    int mPendingIntentId = 123456;
+                                    PendingIntent mPendingIntent = PendingIntent.getActivity(
+                                            getApplicationContext(), mPendingIntentId,
+                                            mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+                                    AlarmManager mgr = (AlarmManager) getApplicationContext().getSystemService(
+                                            getApplicationContext().ALARM_SERVICE);
+                                    mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+                                    System.exit(0);
+                                }
+                            }, 1500);
                         }
                         return null;
                     }
@@ -420,6 +526,9 @@ public class FullscreenActivity extends Activity {
     }
 
 
+    /***
+     * A runnable thread to retrieve status of remote unlocking at a given interval.
+     */
     private void remoteUnlockThread(){
         Runnable remoteUnlockRunnable = new Runnable() {
             public void run() {
@@ -429,7 +538,7 @@ public class FullscreenActivity extends Activity {
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(remoteUnlockRunnable, 0, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(remoteUnlockRunnable, 0, 3, TimeUnit.SECONDS);
     }
 
 
@@ -447,8 +556,6 @@ public class FullscreenActivity extends Activity {
 
                     @Override
                     public void onResponse(JSONArray response) {
-                        /*Toast.makeText(getApplicationContext(),
-                                "Response is: "+ response, Toast.LENGTH_LONG).show();*/
 
                         for (int i = 0; i < response.length(); i++) {
                             try {
@@ -466,7 +573,7 @@ public class FullscreenActivity extends Activity {
                     @Override
                     public void onErrorResponse(VolleyError ex) {
                         Toast.makeText(getApplicationContext(),
-                                "Volley Error!", Toast.LENGTH_SHORT).show();
+                                "Pin Request Volley Error!", Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -514,7 +621,7 @@ public class FullscreenActivity extends Activity {
             @Override
             public void onErrorResponse(VolleyError ex) {
                 Toast.makeText(getApplicationContext(),
-                        "Volley Error!", Toast.LENGTH_SHORT).show();
+                        "Remote Status Volley Error!", Toast.LENGTH_SHORT).show();
             }
         });
 

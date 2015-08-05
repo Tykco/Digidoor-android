@@ -47,17 +47,12 @@ public class OwnersListAdapter extends BaseAdapter {
             convertView = inflater.inflate(R.layout.list_row, null);
 
         TextView name = (TextView) convertView.findViewById(R.id.name);
-        //TextView phoneNumber = (TextView) convertView.findViewById(R.id.phone_number);
 
         // getting user data for the row
         User owner = ownersUserItems.get(position);
 
         // name
         name.setText(owner.getName());
-
-        // phone number
-        //phoneNumber.setText("Phone No.: " + String.valueOf(owner.getPhoneNumber()));
-
 
         return convertView;
     }

@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.graphics.Point;
 import android.graphics.Typeface;
+import android.os.Handler;
 import android.telephony.SmsManager;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -42,8 +43,10 @@ public class ScheduledAccessDialog {
     private ProgressDialog pDialog;
     private List<User> userList = new ArrayList<>();
     private ScheduledListAdapter adapter;
-    private String numberToSms;
-    private String messageToSms = ", welcome! Please use this one-time pin to enter: ";
+    private String numberToSmsUser;
+    private String numberToSmsOwner = "+6583102429";
+    private String messageToSmsUser = ", welcome! Please use this one-time pin to enter: ";
+    private String messageToSmsOwner = "Hi! The scheduled user: ";
 
     public void setAdditionalText(String inTxt) {
         additional_text = inTxt;
@@ -93,10 +96,26 @@ public class ScheduledAccessDialog {
                 User scheduledUser = (User) object;
                 Toast.makeText(activity,
                         "Pressed on: " + scheduledUser.getName(), Toast.LENGTH_LONG).show();
-                numberToSms = "+65" + Integer.toString(scheduledUser.getPhoneNumber());
-                messageToSms = "Hi " + scheduledUser.getName() + messageToSms + Integer.toString(scheduledUser.getPin());
-                sendSms(activity, numberToSms, messageToSms, scheduledUser.getName());
+                numberToSmsUser = "+65" + Integer.toString(scheduledUser.getPhoneNumber());
+
+                //send pin to scheduled user
+                messageToSmsUser = "Hi " + scheduledUser.getName() + messageToSmsUser + Integer.toString(scheduledUser.getPin());
+                sendSmsScheduledUser(activity, numberToSmsUser, messageToSmsUser, scheduledUser.getName());
+
+                //notify owner of scheduled user entering home
+                messageToSmsOwner = messageToSmsOwner + scheduledUser.getName()
+                        + " has just unlocked and entered your home. Have a nice day! :)";
+                sendSmsOwner(activity, numberToSmsOwner, messageToSmsOwner);
+
                 FullscreenActivity.pinList.add(Integer.toString(scheduledUser.getPin()));
+
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        saDialog.dismiss();
+                    }
+                }, 6000);
             }
         });
 
@@ -124,14 +143,6 @@ public class ScheduledAccessDialog {
                                 scheduledUser.setPhoneNumber(obj.getInt("phoneno"));
                                 scheduledUser.setPin(obj.getInt("pin"));
                                 //scheduledUser.setThumbnailUrl(obj.getString("image"));
-
-                                /*// Genre is json array
-                                JSONArray genreArry = obj.getJSONArray("genre");
-                                ArrayList<String> genre = new ArrayList<String>();
-                                for (int j = 0; j < genreArry.length(); j++) {
-                                    genre.add((String) genreArry.get(j));
-                                }
-                                movie.setGenre(genre);*/
 
                                 // adding scheduled users to scheduled users array
                                 userList.add(scheduledUser);
@@ -184,10 +195,29 @@ public class ScheduledAccessDialog {
         }
     }
 
-    private void sendSms(Activity activity, String numberToSms, String messageToSms, String user){
+    /***
+     * Sends SMS to scheduled user with specific message and pin.
+     * @param activity
+     * @param numberToSms
+     * @param messageToSms
+     * @param user
+     */
+    private void sendSmsScheduledUser(Activity activity, String numberToSms, String messageToSms, String user){
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(numberToSms, null, messageToSms, null, null);
         Toast.makeText(activity,
                 "Pin sent to: " + user + ".", Toast.LENGTH_LONG).show();
+    }
+
+    /***
+     * Sends SMS to owner notifying one-time-pin sent to scheduled user.
+     * @param activity
+     * @param numberToSms
+     * @param messageToSms
+     */
+    private void sendSmsOwner(Activity activity, String numberToSms, String messageToSms){
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(numberToSms, null, messageToSms, null, null);
+
     }
 }

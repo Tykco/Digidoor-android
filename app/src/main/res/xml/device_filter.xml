@@ -2,5 +2,5 @@
 <resources>
     <!-- idVendor=2341, idProduct=0043 for Arduino Uno R3 -->
 
-    <usb-device vendor-id="3725" product-id="35" />
+    <usb-device vendor-id="9025" product-id="32823" />
 </resources>
