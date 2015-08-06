@@ -34,25 +34,19 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
-import com.example.android.digidoor_gate.util.SystemUiHider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
- *
- * @see SystemUiHider
- */
+
 public class FullscreenActivity extends Activity {
 
     public UsbManager usbManager;
@@ -149,16 +143,10 @@ public class FullscreenActivity extends Activity {
 
         if(END_CALL){
             Toast.makeText(getApplicationContext(),
-                    "END CALL LALALALALALALALALALLALALALALALALA", Toast.LENGTH_SHORT).show();
+                    "END CALL", Toast.LENGTH_SHORT).show();
 
             END_CALL = false;
-            Intent mStartActivity = new Intent(this, FullscreenActivity.class);
-            int mPendingIntentId = 123456;
-            PendingIntent mPendingIntent = PendingIntent.getActivity(this, mPendingIntentId,
-                    mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-            AlarmManager mgr = (AlarmManager)this.getSystemService(ALARM_SERVICE);
-            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-            System.exit(0);
+            restartApplication();
         }
 
         //Intent intent = getIntent();
@@ -478,15 +466,7 @@ public class FullscreenActivity extends Activity {
                             handler.postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
-                                    int mPendingIntentId = 123456;
-                                    PendingIntent mPendingIntent = PendingIntent.getActivity(
-                                            getApplicationContext(), mPendingIntentId,
-                                            mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-                                    AlarmManager mgr = (AlarmManager)getApplicationContext().getSystemService(
-                                            getApplicationContext().ALARM_SERVICE);
-                                    mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-                                    System.exit(0);
+                                    restartApplication();
                                 }
                             }, 7500);
                         } else {
@@ -499,15 +479,7 @@ public class FullscreenActivity extends Activity {
                             handler.postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
-                                    int mPendingIntentId = 123456;
-                                    PendingIntent mPendingIntent = PendingIntent.getActivity(
-                                            getApplicationContext(), mPendingIntentId,
-                                            mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
-                                    AlarmManager mgr = (AlarmManager) getApplicationContext().getSystemService(
-                                            getApplicationContext().ALARM_SERVICE);
-                                    mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-                                    System.exit(0);
+                                    restartApplication();
                                 }
                             }, 1500);
                         }
@@ -533,7 +505,6 @@ public class FullscreenActivity extends Activity {
         Runnable remoteUnlockRunnable = new Runnable() {
             public void run() {
                 requestRemoteStatus(urlRemoteUnlock);
-
             }
         };
 
@@ -627,6 +598,18 @@ public class FullscreenActivity extends Activity {
 
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
+    }
+
+    private void restartApplication(){
+        Intent mStartActivity = new Intent(getApplicationContext(), FullscreenActivity.class);
+        int mPendingIntentId = 123456;
+        PendingIntent mPendingIntent = PendingIntent.getActivity(
+                getApplicationContext(), mPendingIntentId,
+                mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager mgr = (AlarmManager)getApplicationContext().getSystemService(
+                getApplicationContext().ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+        System.exit(0);
     }
 }
 

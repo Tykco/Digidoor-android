@@ -30,7 +30,7 @@ public class StatePhoneReceiver extends PhoneStateListener {
                     callFromOffHook=true;
 
                     Toast.makeText(context,
-                            "CALL ESTABLISHED HELLOOEOEOEOEOEOEOEOEOEOEOEOEOEOEOEO", Toast.LENGTH_LONG).show();
+                            "CALL ESTABLISHED", Toast.LENGTH_LONG).show();
 
                     try {
                         Thread.sleep(500); // Delay 0,5 seconds to handle better turning on loudspeaker
